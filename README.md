@@ -8,7 +8,7 @@ Jeu de blackjack en Python dans le terminal, pour **1 à 7 joueurs**, contre la 
 
 Retrouve le sujet et les exercices demandés ici :
 
-**[👉 Consulter les consignes du TP Blackjack](https://github.com/esirem-chassel/3aa-soutien/blob/main/TPs/5-blackjack.md)**
+**[Consulter les consignes du TP Blackjack](https://github.com/esirem-chassel/3aa-soutien/blob/main/TPs/5-blackjack.md)**
 
 ## Lancer le jeu
 
