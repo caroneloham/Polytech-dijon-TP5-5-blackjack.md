@@ -1,12 +1,12 @@
 import random
 import json
-from pathlib import Path
+import os
 
 JETONS_DEPART = 100
 MISE_MIN = 10
 MISE_MAX = 50
 MAX_JOUEURS = 7
-FICHIER = Path(__file__).with_name(".sauvegarde.json")
+FICHIER = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".sauvegarde.json")
 
 
 def demander_nombre(message, minimum, maximum):
@@ -33,7 +33,7 @@ def sauvegarder(joueurs):
 
 
 def charger():
-    if not FICHIER.exists():
+    if not os.path.exists(FICHIER):
         return {}
     with open(FICHIER, "r", encoding="utf-8") as fichier:
         return json.load(fichier)
