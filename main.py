@@ -1,6 +1,5 @@
 import random
 import json
-from math import ceil
 from pathlib import Path
 
 JETONS_DEPART = 100
@@ -92,7 +91,7 @@ def assurance(joueurs, banque):
         return
     for joueur in joueurs:
         joueur["assurance"] = 0
-        prix = ceil(joueur["mise"] / 2)
+        prix = (joueur["mise"] + 1) // 2
         if joueur["jetons"] < prix:
             print(joueur["nom"], "a pas asser pour l'assurance.")
             continue
