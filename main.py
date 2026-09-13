@@ -69,8 +69,6 @@ def newgame(joueurs):
         print(nom, "a", joueur["jetons"], "jetons.")
         joueur["mise"] = demander_nombre("Ta mise : ", MISE_MIN, maximum)
         joueur["jetons"] -= joueur["mise"]
-        joueur["main"] = []
-        joueur["couche"] = False
         actifs.append(joueur)
     return actifs
 
@@ -93,6 +91,7 @@ def assurance(joueurs, banque):
     if banque[0] != 11:
         return
     for joueur in joueurs:
+        joueur["assurance"] = 0
         prix = ceil(joueur["mise"] / 2)
         if joueur["jetons"] < prix:
             print(joueur["nom"], "a pas asser pour l'assurance.")
@@ -105,88 +104,104 @@ def assurance(joueurs, banque):
             print("Repond o ou n.")
         if choix == "o":
             joueur["jetons"] -= prix
+            joueur["assurance"] = prix
+    for joueur in joueurs:
+        if joueur["assurance"]:
             if blackjack(banque):
-                joueur["jetons"] += prix * 2
-                print("Assurance gagnée :", prix * 2, "jetons rendus.")
+                gain = joueur["assurance"] * 2
+                joueur["jetons"] += gain
+                print(joueur["nom"], "assurance gagnée :", gain, "jetons rendus.")
             else:
-                print("Assurance perdue.")
+                print(joueur["nom"], "assurance perdue.")
 
 
 def player_turn(joueur, paquet):
-    while score(joueur["main"]) < 21:
-        print("\n", joueur["nom"], joueur["main"])
-        print("Ta ce score :", score(joueur["main"]))
-        choix = input("1) Se coucher  2) Doubler  3) Tirer  4) Rester : ")
-        if choix == "1":
-            if len(joueur["main"]) == 2:
-                joueur["jetons"] += joueur["mise"] / 2
-                joueur["couche"] = True
+    numero = 0
+    while numero < len(joueur["mains"]):
+        main_joueur = joueur["mains"][numero]
+        while score(main_joueur["main"]) < 21:
+            cartes = main_joueur["main"]
+            print("\n", joueur["nom"], "main", numero + 1, ":", cartes)
+            print("Ta ce score :", score(cartes))
+            choix = input("1) Se coucher  2) Doubler  3) Tirer  4) Rester  5) Split : ")
+            if choix == "1":
+                if len(cartes) == 2:
+                    joueur["jetons"] += main_joueur["mise"] / 2
+                    main_joueur["couche"] = True
+                    break
+                print("Ta deja tirer tu peut plus te coucher.")
+            elif choix == "2":
+                if len(cartes) != 2:
+                    print("Tu peut plus doubler ta mise.")
+                elif joueur["jetons"] < main_joueur["mise"]:
+                    print("Ta pas asser de jetons.")
+                else:
+                    joueur["jetons"] -= main_joueur["mise"]
+                    main_joueur["mise"] *= 2
+                    cartes.append(paquet.pop())
+                    break
+            elif choix == "3":
+                cartes.append(paquet.pop())
+            elif choix == "4":
                 break
-            print("Ta deja tirer tu peut plus te coucher.")
-
-        elif choix == "2":
-            if len(joueur["main"]) != 2:
-                print("Tu peut plus doubler ta mise.")
-            elif joueur["jetons"] < joueur["mise"]:
-                print("Ta pas asser de jetons.")
+            elif choix == "5":
+                if len(cartes) != 2 or cartes[0] != cartes[1]:
+                    print("Il faut deux cartes de meme valeur.")
+                elif len(joueur["mains"]) != 1:
+                    print("Un seul split par manche.")
+                elif joueur["jetons"] < main_joueur["mise"]:
+                    print("Ta pas asser de jetons pour split.")
+                else:
+                    joueur["jetons"] -= main_joueur["mise"]
+                    carte = cartes.pop()
+                    cartes.append(paquet.pop())
+                    main_joueur["split"] = True
+                    joueur["mains"].append({
+                        "main": [carte, paquet.pop()],
+                        "mise": main_joueur["mise"],
+                        "couche": False,
+                        "split": True
+                    })
             else:
-                joueur["jetons"] -= joueur["mise"]
-                joueur["mise"] *= 2
-                joueur["main"].append(paquet.pop())
-                break
-
-        elif choix == "3":
-            joueur["main"].append(paquet.pop())
-
-        elif choix == "4":
-            break
-
-        else:
-            print("On a dit entre 1 et 4 pelo.")
-
-    print(joueur["nom"], joueur["main"], "Score :", score(joueur["main"]))
+                print("Met un choix entre 1 et 5.")
+        print(joueur["nom"], "main", numero + 1, main_joueur["main"],
+              "Score :", score(main_joueur["main"]))
+        numero += 1
 
 
 def win_condition(joueurs, banque):
     for joueur in joueurs:
-        points = score(joueur["main"])
-        mise = joueur["mise"]
-        gain = 0
-
-        if joueur["couche"]:
-            resultat = "tu t'es coucher"
-
-        elif points > 21:
-            resultat = "ta depasser 21"
-
-        elif blackjack(banque):
-            if blackjack(joueur["main"]):
+        for numero, main_joueur in enumerate(joueur["mains"], 1):
+            points = score(main_joueur["main"])
+            mise = main_joueur["mise"]
+            naturel = blackjack(main_joueur["main"]) and not main_joueur["split"]
+            gain = 0
+            if main_joueur["couche"]:
+                resultat = "tu t'es coucher"
+            elif points > 21:
+                resultat = "ta depasser 21"
+            elif blackjack(banque):
+                if naturel:
+                    gain = mise
+                    resultat = "egaliter"
+                else:
+                    resultat = "la banque a un blackjack ta perdu"
+            elif naturel:
+                gain = mise * 2.5
+                resultat = "blackjack ta bien jouer !"
+            elif score(banque) > 21 or points > score(banque):
+                gain = mise * 2
+                resultat = "ta gagner !"
+            elif points == score(banque):
                 gain = mise
                 resultat = "egaliter"
             else:
-                resultat = "la banque a un blackjack ta perdu"
-
-        elif blackjack(joueur["main"]):
-            gain = mise * 2.5
-            resultat = "blackjack ta bien jouer !"
-
-        elif score(banque) > 21 or points > score(banque):
-            gain = mise * 2
-            resultat = "ta gagner !"
-
-        elif points == score(banque):
-            gain = mise
-            resultat = "egaliter"
-
-        else:
-            resultat = "ta perdu"
-
-        joueur["jetons"] += gain
-        if gain > mise:
-            joueur["mise_max"] *= 2
-        print(joueur["nom"], ":", resultat)
+                resultat = "ta perdu"
+            joueur["jetons"] += gain
+            if gain > mise:
+                joueur["mise_max"] *= 2
+            print(joueur["nom"], "main", numero, ":", resultat)
         print("Il te reste sa en jetons :", joueur["jetons"])
-
 
 
 def jouer_manche(joueurs):
@@ -197,11 +212,16 @@ def jouer_manche(joueurs):
     paquet = [2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 11] * 24
     random.shuffle(paquet)
     for joueur in actifs:
-        joueur["main"] = [paquet.pop(), paquet.pop()]
+        joueur["mains"] = [{
+            "main": [paquet.pop(), paquet.pop()],
+            "mise": joueur["mise"],
+            "couche": False,
+            "split": False
+        }]
     banque = [paquet.pop(), paquet.pop()]
     print("La carte qu'on voit de la banque :", banque[0])
     for joueur in actifs:
-        print(joueur["nom"], ":", joueur["main"])
+        print(joueur["nom"], ":", joueur["mains"][0]["main"])
     assurance(actifs, banque)
     if not blackjack(banque):
         for joueur in actifs:
