@@ -42,7 +42,7 @@ def charger():
         return json.load(fichier)
 
 
-def create_player(nom):
+def creer_joueur(nom):
     return {
         "nom": nom,
         "jetons": JETONS_DEPART,
@@ -50,7 +50,7 @@ def create_player(nom):
     }
 
 
-def newgame(joueurs):
+def choisir_joueurs(joueurs):
     nb = demander_nombre("Vous ete combien de joueur (1 à 7) : ", 1, MAX_JOUEURS)
     actifs = []
     noms = []
@@ -62,7 +62,7 @@ def newgame(joueurs):
             print("Met un nom different pour chaque joueur.")
         noms.append(nom)
         if nom not in joueurs:
-            joueurs[nom] = create_player(nom)
+            joueurs[nom] = creer_joueur(nom)
         joueur = joueurs[nom]
         if joueur["jetons"] < MISE_MIN:
             print(nom, "a plus asser de jetons pour joué.")
@@ -77,9 +77,9 @@ def newgame(joueurs):
     return actifs
 
 
-def score(main):
-    total = sum(main)
-    nb_as = main.count(11)
+def score(cartes):
+    total = sum(cartes)
+    nb_as = cartes.count(11)
 
     while total > 21 and nb_as > 0:
         total -= 10
@@ -87,8 +87,8 @@ def score(main):
     return total
 
 
-def blackjack(main):
-    return len(main) == 2 and score(main) == 21
+def blackjack(cartes):
+    return len(cartes) == 2 and score(cartes) == 21
 
 
 def assurance(joueurs, banque):
@@ -119,12 +119,12 @@ def assurance(joueurs, banque):
                 print(joueur["nom"], "assurance perdue.")
 
 
-def player_turn(joueur, paquet):
+def tour_joueur(joueur, paquet):
     numero = 0
     while numero < len(joueur["mains"]):
         main_joueur = joueur["mains"][numero]
-        while score(main_joueur["main"]) < 21:
-            cartes = main_joueur["main"]
+        cartes = main_joueur["cartes"]
+        while score(cartes) < 21:
             print("\n", joueur["nom"], "main", numero + 1, ":", cartes)
             print("Ta ce score :", score(cartes))
             choix = input("1) Se coucher  2) Doubler  3) Tirer  4) Rester  5) Split : ")
@@ -161,7 +161,7 @@ def player_turn(joueur, paquet):
                     cartes.append(paquet.pop())
                     main_joueur["split"] = True
                     nouvelle_main = {
-                        "main": [carte, paquet.pop()],
+                        "cartes": [carte, paquet.pop()],
                         "mise": main_joueur["mise"],
                         "couche": False,
                         "split": True
@@ -169,17 +169,20 @@ def player_turn(joueur, paquet):
                     joueur["mains"].append(nouvelle_main)
             else:
                 print("Met un choix entre 1 et 5.")
-        print(joueur["nom"], "main", numero + 1, main_joueur["main"],
-              "Score :", score(main_joueur["main"]))
+        print(joueur["nom"], "main", numero + 1, ":", cartes)
+        print("Score :", score(cartes))
         numero += 1
 
 
-def win_condition(joueurs, banque):
+def regler_manche(joueurs, banque):
+    points_banque = score(banque)
+    blackjack_banque = blackjack(banque)
     for joueur in joueurs:
         for numero, main_joueur in enumerate(joueur["mains"], 1):
-            points = score(main_joueur["main"])
+            cartes = main_joueur["cartes"]
+            points = score(cartes)
             mise = main_joueur["mise"]
-            naturel = blackjack(main_joueur["main"])
+            naturel = blackjack(cartes)
             if main_joueur["split"]:
                 naturel = False
             gain = 0
@@ -187,7 +190,7 @@ def win_condition(joueurs, banque):
                 resultat = "tu t'es coucher"
             elif points > 21:
                 resultat = "ta depasser 21"
-            elif blackjack(banque):
+            elif blackjack_banque:
                 if naturel:
                     gain = mise
                     resultat = "egaliter"
@@ -196,10 +199,10 @@ def win_condition(joueurs, banque):
             elif naturel:
                 gain = mise * 2.5
                 resultat = "blackjack ta bien jouer !"
-            elif score(banque) > 21 or points > score(banque):
+            elif points_banque > 21 or points > points_banque:
                 gain = mise * 2
                 resultat = "ta gagner !"
-            elif points == score(banque):
+            elif points == points_banque:
                 gain = mise
                 resultat = "egaliter"
             else:
@@ -212,32 +215,34 @@ def win_condition(joueurs, banque):
 
 
 def jouer_manche(joueurs):
-    actifs = newgame(joueurs)
+    actifs = choisir_joueurs(joueurs)
     if not actifs:
         print("Ya personne qui peut joué.")
         return
     paquet = [2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 11] * 24
     random.shuffle(paquet)
     for joueur in actifs:
-        joueur["mains"] = [{
-            "main": [paquet.pop(), paquet.pop()],
+        cartes = [paquet.pop(), paquet.pop()]
+        premiere_main = {
+            "cartes": cartes,
             "mise": joueur["mise"],
             "couche": False,
             "split": False
-        }]
+        }
+        joueur["mains"] = [premiere_main]
     banque = [paquet.pop(), paquet.pop()]
     print("La carte qu'on voit de la banque :", banque[0])
     for joueur in actifs:
         premiere_main = joueur["mains"][0]
-        print(joueur["nom"], ":", premiere_main["main"])
+        print(joueur["nom"], ":", premiere_main["cartes"])
     assurance(actifs, banque)
     if not blackjack(banque):
         for joueur in actifs:
-            player_turn(joueur, paquet)
+            tour_joueur(joueur, paquet)
     while score(banque) <= 16:
         banque.append(paquet.pop())
     print("Banque :", banque, "Score :", score(banque))
-    win_condition(actifs, banque)
+    regler_manche(actifs, banque)
     sauvegarder(joueurs)
 
 
