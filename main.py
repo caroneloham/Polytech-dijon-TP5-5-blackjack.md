@@ -1,5 +1,6 @@
 import random
 import json
+from math import ceil
 from pathlib import Path
 
 JETONS_DEPART = 100
@@ -86,6 +87,29 @@ def score(main):
 
 def blackjack(main):
     return len(main) == 2 and score(main) == 21
+
+
+def assurance(joueurs, banque):
+    if banque[0] != 11:
+        return
+    for joueur in joueurs:
+        prix = ceil(joueur["mise"] / 2)
+        if joueur["jetons"] < prix:
+            print(joueur["nom"], "a pas asser pour l'assurance.")
+            continue
+        print(joueur["nom"], ": assurance pour", prix, "jetons.")
+        while True:
+            choix = input("Tu prend l'assurance ? (o/n) : ").strip().lower()
+            if choix in ["o", "n"]:
+                break
+            print("Repond o ou n.")
+        if choix == "o":
+            joueur["jetons"] -= prix
+            if blackjack(banque):
+                joueur["jetons"] += prix * 2
+                print("Assurance gagnée :", prix * 2, "jetons rendus.")
+            else:
+                print("Assurance perdue.")
 
 
 def player_turn(joueur, paquet):
@@ -178,6 +202,7 @@ def jouer_manche(joueurs):
     print("La carte qu'on voit de la banque :", banque[0])
     for joueur in actifs:
         print(joueur["nom"], ":", joueur["main"])
+    assurance(actifs, banque)
     if not blackjack(banque):
         for joueur in actifs:
             player_turn(joueur, paquet)
