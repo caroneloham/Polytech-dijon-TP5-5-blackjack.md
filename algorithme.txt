@@ -1,0 +1,20 @@
+BLACKJACK
+
+Charger les jetons des joueurs.
+Afficher le menu : jouer ou quitter.
+
+Pour chaque manche :
+    Choisir les joueurs et leurs mises selon leurs jetons et les limites.
+    Melanger le paquet et distribuer deux cartes par joueur et a la banque.
+    Montrer seulement la premiere carte de la banque.
+    Proposer une assurance si cette carte est un As.
+    Verifier si la banque a un blackjack et regler les assurances.
+    Sinon, faire jouer chaque main : tirer, rester, doubler, se coucher ou split.
+    Reveler les cartes de la banque et tirer tant que son score est au plus 16.
+    Comparer chaque main a la banque en distinguant blackjack et simple 21.
+    Rendre les mises et gains, puis doubler la limite de mise des mains gagnantes.
+    Enregistrer les jetons et les limites de mise.
+    Revenir au menu pour changer les participants ou rejouer.
+
+Un As vaut 11, puis 1 si cela evite de depasser 21.
+Une main issue d'un split ne donne pas le bonus blackjack.
