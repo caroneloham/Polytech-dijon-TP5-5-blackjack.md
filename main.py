@@ -6,7 +6,10 @@ JETONS_DEPART = 100
 MISE_MIN = 10
 MISE_MAX = 50
 MAX_JOUEURS = 7
-FICHIER = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".sauvegarde.json")
+
+chemin_programme = os.path.abspath(__file__)
+dossier = os.path.dirname(chemin_programme)
+FICHIER = os.path.join(dossier, ".sauvegarde.json")
 
 
 def demander_nombre(message, minimum, maximum):
@@ -64,7 +67,9 @@ def newgame(joueurs):
         if joueur["jetons"] < MISE_MIN:
             print(nom, "a plus asser de jetons pour joué.")
             continue
-        maximum = int(min(joueur["mise_max"], joueur["jetons"]))
+        maximum = joueur["mise_max"]
+        if joueur["jetons"] < maximum:
+            maximum = int(joueur["jetons"])
         print(nom, "a", joueur["jetons"], "jetons.")
         joueur["mise"] = demander_nombre("Ta mise : ", MISE_MIN, maximum)
         joueur["jetons"] -= joueur["mise"]
@@ -155,12 +160,13 @@ def player_turn(joueur, paquet):
                     carte = cartes.pop()
                     cartes.append(paquet.pop())
                     main_joueur["split"] = True
-                    joueur["mains"].append({
+                    nouvelle_main = {
                         "main": [carte, paquet.pop()],
                         "mise": main_joueur["mise"],
                         "couche": False,
                         "split": True
-                    })
+                    }
+                    joueur["mains"].append(nouvelle_main)
             else:
                 print("Met un choix entre 1 et 5.")
         print(joueur["nom"], "main", numero + 1, main_joueur["main"],
@@ -173,7 +179,9 @@ def win_condition(joueurs, banque):
         for numero, main_joueur in enumerate(joueur["mains"], 1):
             points = score(main_joueur["main"])
             mise = main_joueur["mise"]
-            naturel = blackjack(main_joueur["main"]) and not main_joueur["split"]
+            naturel = blackjack(main_joueur["main"])
+            if main_joueur["split"]:
+                naturel = False
             gain = 0
             if main_joueur["couche"]:
                 resultat = "tu t'es coucher"
@@ -220,7 +228,8 @@ def jouer_manche(joueurs):
     banque = [paquet.pop(), paquet.pop()]
     print("La carte qu'on voit de la banque :", banque[0])
     for joueur in actifs:
-        print(joueur["nom"], ":", joueur["mains"][0]["main"])
+        premiere_main = joueur["mains"][0]
+        print(joueur["nom"], ":", premiere_main["main"])
     assurance(actifs, banque)
     if not blackjack(banque):
         for joueur in actifs:
